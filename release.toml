@@ -1,0 +1,9 @@
+allow-branch = ["main"]
+consolidate-commits = true
+sign-commit = false
+sign-tag = false
+push = false
+publish = false
+tag-name = "v{{version}}"
+tag-message = "release: v{{version}}"
+pre-release-commit-message = "chore(release): {{version}}"
