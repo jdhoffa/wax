@@ -1,8 +1,11 @@
+//! Candidate aggregation and ranking.
+
 use std::collections::HashMap;
 
 use crate::cli::SortMode;
 use crate::model::{CandidateRecord, OwnedAlbum, SeedAlbum};
 
+/// Options that control filtering and ranking behavior.
 #[derive(Debug, Clone)]
 pub struct ScoreOptions {
     pub min_overlap: usize,
@@ -20,6 +23,7 @@ struct Aggregate {
     collectors: Vec<String>,
 }
 
+/// Aggregate collector evidence into ranked recommendation rows.
 pub fn rank_candidates(
     seed: &SeedAlbum,
     collector_albums: Vec<(String, Vec<OwnedAlbum>)>,

@@ -27,6 +27,33 @@ Core implementation lives in:
 - `src/score.rs`
 - `src/output.rs`
 
+Execution path for a typical command:
+
+1. `src/main.rs` parses the CLI and calls `wax::app::run`.
+2. `src/app.rs` initializes logging, loads settings, chooses an output format, and dispatches the subcommand.
+3. `src/provider.rs` detects the upstream platform and runs the command-specific workflow.
+4. `src/fetch.rs` fetches remote pages or fixture files and uses `src/cache.rs` for response caching.
+5. `src/parser.rs` or `src/soundcloud.rs` normalize URLs and extract provider-specific data.
+6. `src/score.rs` aggregates overlap evidence into ranked recommendations.
+7. `src/output.rs` renders table, JSON, or CSV output.
+
+## Module Guide
+
+- `src/app.rs`: top-level application wiring from parsed CLI to provider commands and output rendering
+- `src/cache.rs`: filesystem-backed response cache keyed by URL hash
+- `src/cli.rs`: Clap definitions for commands, flags, and help text
+- `src/config.rs`: config-file loading and precedence with CLI flags
+- `src/error.rs`: shared error type and process exit-code mapping
+- `src/fetch.rs`: HTTP client setup, cache lookups, rate limiting, and fixture loading via `file://`
+- `src/model.rs`: shared structs used across provider code, ranking, and output
+- `src/output.rs`: human-readable table rendering plus JSON/CSV serializers
+- `src/parser.rs`: Bandcamp HTML normalization and parsing
+- `src/provider.rs`: provider detection and command orchestration
+- `src/score.rs`: candidate filtering, aggregation, and ranking
+- `src/soundcloud.rs`: SoundCloud URL handling, API helpers, and likes-feed parsing
+
+If you are adding a new provider, the cleanest path is to keep provider-specific normalization/parsing in a dedicated module and extend `src/provider.rs` only with orchestration and dispatch.
+
 ## Development
 
 Run the test suite:
@@ -40,6 +67,13 @@ Run the CLI locally without installing:
 ```bash
 cargo run -- dig https://artist.bandcamp.com/album/example-record
 cargo run -- resolve https://soundcloud.com/chvrches/the-mother-we-share
+cargo run -- --help
+```
+
+Build rustdoc locally:
+
+```bash
+cargo doc --no-deps
 ```
 
 ## Releasing
@@ -134,6 +168,8 @@ The live SoundCloud `dig` path is still expensive and may need more work on:
 - fallback behavior
 - sparse public data
 - pagination strategy
+
+When editing the SoundCloud flow, keep in mind that `src/provider.rs` owns the crawl orchestration while `src/soundcloud.rs` owns URL construction and response parsing. Keeping that split clean makes it easier to test and document.
 
 ## Testing Notes
 
