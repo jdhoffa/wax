@@ -35,7 +35,10 @@ pub fn normalize_url(url: &str) -> Result<String> {
         .map_err(|_| AppError::InvalidInput(format!("unsupported SoundCloud URL: {url}")))?;
 
     let trimmed = parsed.path().trim_end_matches('/');
-    let segments: Vec<_> = trimmed.split('/').filter(|segment| !segment.is_empty()).collect();
+    let segments: Vec<_> = trimmed
+        .split('/')
+        .filter(|segment| !segment.is_empty())
+        .collect();
     if segments.len() < 2 {
         return Err(AppError::InvalidInput(format!(
             "expected a SoundCloud track or playlist URL: {url}"
@@ -163,7 +166,9 @@ pub fn likers_url(client_id: &str, track_id: &str, limit: usize) -> Result<Strin
 }
 
 pub fn user_likes_url(client_id: &str, user_id: &str, limit: usize) -> Result<String> {
-    let mut url = Url::parse(&format!("https://api-v2.soundcloud.com/users/{user_id}/likes"))?;
+    let mut url = Url::parse(&format!(
+        "https://api-v2.soundcloud.com/users/{user_id}/likes"
+    ))?;
     url.query_pairs_mut()
         .append_pair("client_id", client_id)
         .append_pair("limit", &limit.to_string());
@@ -267,26 +272,28 @@ pub fn parse_user_likes_page(
             continue;
         }
 
-        deduped.entry(track.permalink_url.clone()).or_insert_with(|| {
-            let mut tags: Vec<String> = track.genre.into_iter().collect();
-            if !entry.created_at.is_empty() {
-                tags.push(format!("liked_at:{}", entry.created_at));
-            }
-            tags.push(format!("seed_liked_at:{seed_timestamp}"));
+        deduped
+            .entry(track.permalink_url.clone())
+            .or_insert_with(|| {
+                let mut tags: Vec<String> = track.genre.into_iter().collect();
+                if !entry.created_at.is_empty() {
+                    tags.push(format!("liked_at:{}", entry.created_at));
+                }
+                tags.push(format!("seed_liked_at:{seed_timestamp}"));
 
-            crate::model::OwnedAlbum {
-                platform: Platform::Soundcloud,
-                kind: ItemKind::Track,
-                title: track.title,
-                artist: track
-                    .user
-                    .map(|user| user.username)
-                    .unwrap_or_else(|| "Unknown Artist".to_string()),
-                url: track.permalink_url,
-                tags,
-                label: track.label_name,
-            }
-        });
+                crate::model::OwnedAlbum {
+                    platform: Platform::Soundcloud,
+                    kind: ItemKind::Track,
+                    title: track.title,
+                    artist: track
+                        .user
+                        .map(|user| user.username)
+                        .unwrap_or_else(|| "Unknown Artist".to_string()),
+                    url: track.permalink_url,
+                    tags,
+                    label: track.label_name,
+                }
+            });
     }
 
     if deduped.is_empty() {
@@ -463,7 +470,10 @@ mod tests {
         assert_eq!(seed.title, "Test Track");
         assert_eq!(seed.artist, "Test User");
         assert_eq!(seed.url, "https://soundcloud.com/test-user/test-track");
-        assert_eq!(seed.artist_url.as_deref(), Some("https://soundcloud.com/test-user"));
+        assert_eq!(
+            seed.artist_url.as_deref(),
+            Some("https://soundcloud.com/test-user")
+        );
         assert_eq!(seed.tags, vec!["ambient"]);
         assert_eq!(seed.release_id.as_deref(), Some("12345"));
     }
