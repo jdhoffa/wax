@@ -6,6 +6,8 @@ use thiserror::Error;
 pub enum AppError {
     #[error("invalid input: {0}")]
     InvalidInput(String),
+    #[error("{platform} does not support `{feature}` yet")]
+    UnsupportedPlatformFeature { platform: String, feature: String },
     #[error("network error: {0}")]
     Network(String),
     #[error("parse error: {0}")]

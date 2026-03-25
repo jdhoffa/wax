@@ -7,4 +7,6 @@ pub mod fetch;
 pub mod model;
 pub mod output;
 pub mod parser;
+pub mod provider;
 pub mod score;
+pub mod soundcloud;

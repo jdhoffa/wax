@@ -1,7 +1,33 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Platform {
+    Bandcamp,
+    Soundcloud,
+}
+
+impl Platform {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Bandcamp => "bandcamp",
+            Self::Soundcloud => "soundcloud",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ItemKind {
+    Album,
+    Track,
+    Playlist,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SeedAlbum {
+    pub platform: Platform,
+    pub kind: ItemKind,
     pub title: String,
     pub artist: String,
     pub url: String,
@@ -21,6 +47,8 @@ pub struct Collector {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OwnedAlbum {
+    pub platform: Platform,
+    pub kind: ItemKind,
     pub title: String,
     pub artist: String,
     pub url: String,

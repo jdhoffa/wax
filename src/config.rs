@@ -29,8 +29,9 @@ pub struct Settings {
 impl Settings {
     pub fn load(cli: &Cli) -> Result<Self> {
         let file_cfg = load_file_config(cli.config.as_deref())?;
-        let project_dirs = ProjectDirs::from("dev", "jdhoffa", "wax")
-            .ok_or_else(|| AppError::InvalidInput("unable to determine cache directory".to_string()))?;
+        let project_dirs = ProjectDirs::from("dev", "jdhoffa", "wax").ok_or_else(|| {
+            AppError::InvalidInput("unable to determine cache directory".to_string())
+        })?;
 
         let cache_dir = cli
             .cache_dir
