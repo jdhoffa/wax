@@ -2,7 +2,12 @@
 name = "wax"
 version = "0.1.0"
 edition = "2021"
-description = "CLI for digging through public Bandcamp collector graphs"
+description = "CLI for digging through public music discovery signals from Bandcamp and SoundCloud"
+license = "MIT"
+repository = "https://github.com/jdhoffa/wax"
+readme = "README.md"
+keywords = ["music", "bandcamp", "soundcloud", "cli", "discovery"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0"

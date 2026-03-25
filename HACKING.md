@@ -42,6 +42,57 @@ cargo run -- dig https://artist.bandcamp.com/album/example-record
 cargo run -- resolve https://soundcloud.com/chvrches/the-mother-we-share
 ```
 
+## Releasing
+
+`wax` uses `cargo-release` for local release orchestration and GitHub Actions for the actual crates.io publish.
+
+Install `cargo-release`:
+
+```bash
+cargo install cargo-release
+```
+
+The release config lives in `release.toml`.
+
+Normal release flow:
+
+1. Ensure the branch is up to date and CI is green.
+2. Run a dry run:
+
+```bash
+cargo release patch
+```
+
+3. Execute the release locally:
+
+```bash
+cargo release patch --execute
+```
+
+4. Push the release commit and tag:
+
+```bash
+git push --follow-tags
+```
+
+That push triggers `.github/workflows/publish.yml`, which:
+
+- checks formatting
+- runs clippy
+- runs tests
+- runs `cargo publish --dry-run`
+- publishes to crates.io
+
+Before the first release, configure the GitHub repo secret:
+
+- `CRATES_IO_TOKEN`
+
+Recommended release policy:
+
+- publish intentional releases only
+- do not publish every merge to `main`
+- use patch releases for fixes, minor releases for additive features, and major releases for breaking changes
+
 ## Configuration
 
 Pass a TOML file with `--config`:
