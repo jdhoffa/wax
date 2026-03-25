@@ -68,13 +68,25 @@ Inspect the available commands:
 ```bash
 wax --help
 wax dig --help
+wax resolve --help
 ```
+
+Typical flow:
+
+1. Run `wax resolve <url>` to confirm the seed metadata and platform detection.
+2. Run `wax dig <url>` to generate ranked recommendations.
+3. Add output flags like `--json` or `--csv` when you want to script against the results.
 
 ## Commands
 
 ### `wax dig <url>`
 
 Runs the recommendation flow for a supported URL.
+
+What it does:
+
+- Bandcamp: resolves the seed album, collects public collectors, reads each public library, and ranks repeated overlap
+- SoundCloud: resolves the seed track, fetches public likers, inspects each liker feed around the seed like event, and ranks repeated nearby co-likes
 
 Examples:
 
@@ -103,6 +115,8 @@ Provider notes:
 - Bandcamp `dig` uses public collectors and their public libraries
 - SoundCloud `dig` currently supports track URLs
 - SoundCloud playlist URLs are not supported for `dig` yet
+- `--tag` filtering is most useful on Bandcamp; SoundCloud tags are currently limited to what the public API exposes
+- `--csv` writes only ranked result rows for `dig`
 
 ### `wax resolve <url>`
 
@@ -168,6 +182,11 @@ These flags are available across commands:
 - `-v`, `--verbose`: enable debug logging
 - `--quiet`: only print errors
 
+CLI precedence:
+
+- command-line flags override config file values
+- config file values override built-in defaults
+
 ## Output Modes
 
 By default, `wax` prints readable table output.
@@ -187,12 +206,66 @@ wax collectors https://artist.bandcamp.com/album/example-record --csv
 wax library https://bandcamp.com/fanname --csv
 ```
 
+Command support:
+
+- `resolve`: table or JSON
+- `dig`: table, JSON, or CSV
+- `collectors`: table, JSON, or CSV
+- `library`: table, JSON, or CSV
+- `cache`: plain text
+
+If both `--json` and `--csv` are passed, CSV wins for commands that support it.
+
+## Configuration
+
+Pass a TOML file with `--config`:
+
+```bash
+wax dig https://artist.bandcamp.com/album/example-record --config ./wax.toml
+```
+
+Example:
+
+```toml
+cache_dir = "/tmp/wax-cache"
+request_delay_ms = 1000
+concurrency = 4
+timeout_ms = 10000
+user_agent = "wax/0.1"
+max_collectors = 75
+max_depth = 1
+```
+
+Currently wired settings:
+
+- `cache_dir`
+- `request_delay_ms`
+- `concurrency`
+- `timeout_ms`
+- `user_agent`
+
+Schema fields such as `max_collectors` and `max_depth` exist in the config type, but command execution still takes those values from CLI arguments and built-in defaults.
+
+## Supported URLs
+
+- Bandcamp album URLs for `resolve`, `collectors`, and `dig`
+- Bandcamp fan URLs for `library`
+- SoundCloud track URLs for `resolve` and `dig`
+- SoundCloud playlist URLs for `resolve`
+
+Unsupported today:
+
+- SoundCloud `collectors`
+- SoundCloud `library`
+- SoundCloud playlist `dig`
+
 ## Notes
 
 - `wax` only uses publicly visible Bandcamp and SoundCloud data
 - SoundCloud support currently focuses on track resolution and a prototype `dig` flow
 - private or unavailable public data is skipped when possible
 - repeated runs are faster when the cache is warm
+- some commands may return `no usable public data found` when a page is valid but the needed public signals are missing
 
 ## Hacking
 
