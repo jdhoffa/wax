@@ -1,5 +1,5 @@
 [package]
-name = "wax"
+name = "wax-dig"
 version = "0.1.1"
 edition = "2021"
 description = "CLI for digging through public music discovery signals from Bandcamp and SoundCloud"
@@ -8,6 +8,14 @@ repository = "https://github.com/jdhoffa/wax"
 readme = "README.md"
 keywords = ["music", "bandcamp", "soundcloud", "cli", "discovery"]
 categories = ["command-line-utilities"]
+
+[[bin]]
+name = "wax"
+path = "src/main.rs"
+
+[lib]
+name = "wax"
+path = "src/lib.rs"
 
 [dependencies]
 anyhow = "1.0"
