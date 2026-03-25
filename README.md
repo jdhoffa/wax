@@ -24,6 +24,12 @@ Build and install the binary into Cargo's bin directory:
 cargo install --path .
 ```
 
+To install from crates.io:
+
+```bash
+cargo install wax-dig
+```
+
 That usually installs `wax` to `~/.cargo/bin/wax`.
 
 If `~/.cargo/bin` is not on your `PATH`, add:
