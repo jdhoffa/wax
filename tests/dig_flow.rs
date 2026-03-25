@@ -1,6 +1,6 @@
+use wax::cli::SortMode;
 use wax::parser::{parse_collectors, parse_owned_albums, resolve_seed};
 use wax::score::{rank_candidates, ScoreOptions};
-use wax::cli::SortMode;
 
 #[test]
 fn fixture_flow_produces_overlap_result() {
@@ -23,6 +23,7 @@ fn fixture_flow_produces_overlap_result() {
             exclude_artist: true,
             exclude_label: false,
             required_tags: vec![],
+            source_label_plural: "collectors",
             sort: SortMode::Score,
             limit: 10,
         },

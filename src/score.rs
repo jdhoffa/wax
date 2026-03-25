@@ -9,6 +9,7 @@ pub struct ScoreOptions {
     pub exclude_artist: bool,
     pub exclude_label: bool,
     pub required_tags: Vec<String>,
+    pub source_label_plural: &'static str,
     pub sort: SortMode,
     pub limit: usize,
 }
@@ -43,10 +44,12 @@ pub fn rank_candidates(
                 continue;
             }
             if !options.required_tags.is_empty()
-                && !options
-                    .required_tags
-                    .iter()
-                    .all(|tag| album.tags.iter().any(|value| value.eq_ignore_ascii_case(tag)))
+                && !options.required_tags.iter().all(|tag| {
+                    album
+                        .tags
+                        .iter()
+                        .any(|value| value.eq_ignore_ascii_case(tag))
+                })
             {
                 continue;
             }
@@ -86,7 +89,10 @@ pub fn rank_candidates(
             overlap_count,
             overlap_ratio,
             score,
-            reason: format!("Owned by {overlap_count} of {scanned} sampled collectors"),
+            reason: format!(
+                "Seen in {overlap_count} of {scanned} sampled {}",
+                options.source_label_plural
+            ),
             collectors: aggregate.collectors,
         });
     }
@@ -107,10 +113,13 @@ pub fn rank_candidates(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::{ItemKind, Platform};
 
     #[test]
     fn ranks_candidates_by_overlap() {
         let seed = SeedAlbum {
+            platform: Platform::Bandcamp,
+            kind: ItemKind::Album,
             title: "Seed".to_string(),
             artist: "Seed Artist".to_string(),
             url: "https://seed.bandcamp.com/album/seed".to_string(),
@@ -124,6 +133,8 @@ mod tests {
             (
                 "fan_a".to_string(),
                 vec![OwnedAlbum {
+                    platform: Platform::Bandcamp,
+                    kind: ItemKind::Album,
                     title: "A".to_string(),
                     artist: "Other".to_string(),
                     url: "https://x.bandcamp.com/album/a".to_string(),
@@ -134,6 +145,8 @@ mod tests {
             (
                 "fan_b".to_string(),
                 vec![OwnedAlbum {
+                    platform: Platform::Bandcamp,
+                    kind: ItemKind::Album,
                     title: "A".to_string(),
                     artist: "Other".to_string(),
                     url: "https://x.bandcamp.com/album/a".to_string(),
@@ -151,6 +164,7 @@ mod tests {
                 exclude_artist: false,
                 exclude_label: false,
                 required_tags: vec![],
+                source_label_plural: "collectors",
                 sort: SortMode::Score,
                 limit: 10,
             },

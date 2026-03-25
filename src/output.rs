@@ -1,5 +1,7 @@
 use crate::error::Result;
-use crate::model::{CandidateRecord, CollectorsOutput, DigOutput, LibraryOutput, ResolveOutput};
+use crate::model::{
+    CandidateRecord, CollectorsOutput, DigOutput, ItemKind, LibraryOutput, ResolveOutput,
+};
 
 pub enum OutputFormat {
     Table,
@@ -11,6 +13,15 @@ pub fn print_resolve(output: &ResolveOutput, format: OutputFormat) -> Result<()>
     match format {
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(output)?),
         OutputFormat::Table | OutputFormat::Csv => {
+            println!("Platform: {}", output.seed.platform.as_str());
+            println!(
+                "Type    : {}",
+                match output.seed.kind {
+                    ItemKind::Album => "album",
+                    ItemKind::Track => "track",
+                    ItemKind::Playlist => "playlist",
+                }
+            );
             println!("Title   : {}", output.seed.title);
             println!("Artist  : {}", output.seed.artist);
             println!("URL     : {}", output.seed.url);
@@ -59,7 +70,11 @@ pub fn print_library(output: &LibraryOutput, format: OutputFormat) -> Result<()>
             let mut writer = csv::Writer::from_writer(std::io::stdout());
             writer.write_record(["artist", "album", "url"])?;
             for album in &output.albums {
-                writer.write_record([album.artist.as_str(), album.title.as_str(), album.url.as_str()])?;
+                writer.write_record([
+                    album.artist.as_str(),
+                    album.title.as_str(),
+                    album.url.as_str(),
+                ])?;
             }
             writer.flush()?;
         }
@@ -121,8 +136,8 @@ fn print_results_table(output: &DigOutput) {
     );
     println!();
     println!(
-        "{:<4} {:<24} {:<28} {:>8} {:>8} {:>8}  {}",
-        "#", "Artist", "Album", "Overlap", "Pct", "Score", "Reason"
+        "{:<4} {:<24} {:<28} {:>8} {:>8} {:>8}  Reason",
+        "#", "Artist", "Album", "Overlap", "Pct", "Score"
     );
     for item in &output.results {
         println!(

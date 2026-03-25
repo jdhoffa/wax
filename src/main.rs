@@ -1,6 +1,6 @@
+use clap::Parser;
 use wax::app::run;
 use wax::cli::Cli;
-use clap::Parser;
 
 #[tokio::main]
 async fn main() {

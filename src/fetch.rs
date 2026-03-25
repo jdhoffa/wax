@@ -52,7 +52,9 @@ impl Fetcher {
         let response = self.client.get(url).send().await?;
         let status = response.status();
         if !status.is_success() {
-            return Err(AppError::Network(format!("request failed for {url}: {status}")));
+            return Err(AppError::Network(format!(
+                "request failed for {url}: {status}"
+            )));
         }
 
         let body = response.text().await?;

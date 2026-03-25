@@ -3,7 +3,11 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
-#[command(name = "wax", version, about = "Dig through public Bandcamp collector overlap")]
+#[command(
+    name = "wax",
+    version,
+    about = "Dig through public Bandcamp collector overlap"
+)]
 pub struct Cli {
     #[arg(long, global = true)]
     pub config: Option<PathBuf>,

@@ -1,0 +1,64 @@
+{
+  "collection": [
+    {
+      "created_at": "2026-03-20T12:00:00Z",
+      "kind": "like",
+      "track": {
+        "id": 201,
+        "kind": "track",
+        "title": "Related One",
+        "permalink_url": "https://soundcloud.com/artist-a/related-one",
+        "genre": "ambient",
+        "label_name": null,
+        "user": {
+          "username": "Artist A"
+        }
+      }
+    },
+    {
+      "created_at": "2026-03-20T12:10:00Z",
+      "kind": "like",
+      "track": {
+        "id": 100,
+        "kind": "track",
+        "title": "Seed Track",
+        "permalink_url": "https://soundcloud.com/seed-user/seed-track",
+        "genre": "ambient",
+        "label_name": null,
+        "user": {
+          "username": "Seed User"
+        }
+      }
+    },
+    {
+      "created_at": "2026-03-20T12:20:00Z",
+      "kind": "like",
+      "track": {
+        "id": 202,
+        "kind": "track",
+        "title": "Related Two",
+        "permalink_url": "https://soundcloud.com/artist-b/related-two",
+        "genre": "ambient",
+        "label_name": null,
+        "user": {
+          "username": "Artist B"
+        }
+      }
+    },
+    {
+      "created_at": "2026-03-28T12:20:00Z",
+      "kind": "like",
+      "track": {
+        "id": 203,
+        "kind": "track",
+        "title": "Far Away",
+        "permalink_url": "https://soundcloud.com/artist-c/far-away",
+        "genre": "ambient",
+        "label_name": null,
+        "user": {
+          "username": "Artist C"
+        }
+      }
+    }
+  ]
+}

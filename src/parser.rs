@@ -5,7 +5,7 @@ use scraper::{Html, Selector};
 use url::Url;
 
 use crate::error::{AppError, Result};
-use crate::model::{Collector, OwnedAlbum, SeedAlbum};
+use crate::model::{Collector, ItemKind, OwnedAlbum, Platform, SeedAlbum};
 
 pub fn normalize_url(url: &str) -> Result<String> {
     let mut parsed = Url::parse(url)?;
@@ -33,10 +33,14 @@ pub fn resolve_seed(url: &str, html: &str) -> Result<SeedAlbum> {
         .unwrap_or_else(|| "Unknown Album".to_string());
 
     let (title, artist) = split_album_artist(&og_title);
-    let artist_name = artist.unwrap_or_else(|| infer_artist_from_html(html).unwrap_or_else(|| "Unknown Artist".to_string()));
+    let artist_name = artist.unwrap_or_else(|| {
+        infer_artist_from_html(html).unwrap_or_else(|| "Unknown Artist".to_string())
+    });
     let tags = collect_tag_text(&document);
 
     Ok(SeedAlbum {
+        platform: Platform::Bandcamp,
+        kind: ItemKind::Album,
         title,
         artist: artist_name,
         url: canonical_url,
@@ -70,7 +74,12 @@ pub fn parse_collectors(html: &str) -> Vec<Collector> {
             .next()
             .unwrap_or("unknown")
             .to_string();
-        let text = anchor.text().collect::<Vec<_>>().join(" ").trim().to_string();
+        let text = anchor
+            .text()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .trim()
+            .to_string();
 
         collectors.push(Collector {
             handle,
@@ -101,7 +110,13 @@ pub fn parse_owned_albums(html: &str) -> Vec<OwnedAlbum> {
         let (title, artist) = split_album_artist(&trimmed);
 
         albums.entry(url.clone()).or_insert_with(|| OwnedAlbum {
-            title: if title.is_empty() { "Unknown Album".to_string() } else { title },
+            platform: Platform::Bandcamp,
+            kind: ItemKind::Album,
+            title: if title.is_empty() {
+                "Unknown Album".to_string()
+            } else {
+                title
+            },
             artist: artist.unwrap_or_else(|| "Unknown Artist".to_string()),
             url,
             tags: Vec::new(),
@@ -180,12 +195,20 @@ fn normalize_collector_url(href: &str) -> Option<String> {
     let url = if href.starts_with("http://") || href.starts_with("https://") {
         Url::parse(href).ok()?
     } else {
-        Url::parse(&format!("https://bandcamp.com{}", ensure_leading_slash(href))).ok()?
+        Url::parse(&format!(
+            "https://bandcamp.com{}",
+            ensure_leading_slash(href)
+        ))
+        .ok()?
     };
 
     let host = url.host_str()?;
     let path = url.path().trim_end_matches('/');
-    let first_segment = path.trim_start_matches('/').split('/').next().unwrap_or_default();
+    let first_segment = path
+        .trim_start_matches('/')
+        .split('/')
+        .next()
+        .unwrap_or_default();
 
     if host == "bandcamp.com"
         && !first_segment.is_empty()
@@ -265,6 +288,8 @@ mod tests {
         assert_eq!(albums.len(), 1);
         assert_eq!(albums[0].title, "Record A");
         assert_eq!(albums[0].artist, "Artist A");
+        assert_eq!(albums[0].platform, Platform::Bandcamp);
+        assert_eq!(albums[0].kind, ItemKind::Album);
     }
 
     #[test]
@@ -278,5 +303,7 @@ mod tests {
         let seed = resolve_seed("https://artist.bandcamp.com/album/seed", html).unwrap();
         assert_eq!(seed.title, "Seed Record");
         assert_eq!(seed.artist, "Seed Artist");
+        assert_eq!(seed.platform, Platform::Bandcamp);
+        assert_eq!(seed.kind, ItemKind::Album);
     }
 }
