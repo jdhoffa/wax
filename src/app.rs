@@ -7,6 +7,7 @@ use crate::config::Settings;
 use crate::error::Result;
 use crate::fetch::Fetcher;
 use crate::output::{print_collectors, print_dig, print_library, print_resolve, OutputFormat};
+use crate::progress::ProgressReporter;
 use crate::provider;
 
 /// Execute the selected CLI command end to end.
@@ -39,7 +40,8 @@ pub async fn run(cli: Cli) -> Result<()> {
         }
         Commands::Dig(args) => {
             let mut fetcher = Fetcher::new(&settings).await?;
-            let output = provider::dig_command(&mut fetcher, &args).await?;
+            let progress = ProgressReporter::new(!cli.quiet);
+            let output = provider::dig_command(&mut fetcher, &args, progress).await?;
             print_dig(&output, format)?;
         }
         Commands::Cache { command } => {

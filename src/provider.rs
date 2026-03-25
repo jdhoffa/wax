@@ -14,6 +14,7 @@ use crate::model::{
     CollectorsOutput, CrawlSummary, DigOutput, LibraryOutput, Platform, ResolveOutput,
 };
 use crate::parser;
+use crate::progress::ProgressReporter;
 use crate::score::{rank_candidates, ScoreOptions};
 use crate::soundcloud;
 
@@ -75,10 +76,14 @@ pub async fn library_command(
 }
 
 /// Rank recommendations for a supported seed URL.
-pub async fn dig_command(fetcher: &mut Fetcher, args: &DigArgs) -> Result<DigOutput> {
+pub async fn dig_command(
+    fetcher: &mut Fetcher,
+    args: &DigArgs,
+    progress: ProgressReporter,
+) -> Result<DigOutput> {
     match detect_platform(&args.album_url)? {
-        Platform::Bandcamp => dig_bandcamp(fetcher, args).await,
-        Platform::Soundcloud => dig_soundcloud(fetcher, args).await,
+        Platform::Bandcamp => dig_bandcamp(fetcher, args, progress).await,
+        Platform::Soundcloud => dig_soundcloud(fetcher, args, progress).await,
     }
 }
 
@@ -139,7 +144,12 @@ async fn library_bandcamp(
     })
 }
 
-async fn dig_bandcamp(fetcher: &mut Fetcher, args: &DigArgs) -> Result<DigOutput> {
+async fn dig_bandcamp(
+    fetcher: &mut Fetcher,
+    args: &DigArgs,
+    progress: ProgressReporter,
+) -> Result<DigOutput> {
+    progress.stage("Resolving Bandcamp seed...");
     let resolved = resolve_bandcamp(fetcher, &args.album_url).await?;
     let seed_html = fetcher.fetch_text(&resolved.seed.url).await?;
     let discovered_collectors = parser::parse_collectors(&seed_html);
@@ -153,11 +163,18 @@ async fn dig_bandcamp(fetcher: &mut Fetcher, args: &DigArgs) -> Result<DigOutput
         return Err(AppError::NoPublicData);
     }
 
+    progress.stage(&format!(
+        "Found {} collectors, sampling {}...",
+        discovered_collectors.len(),
+        sampled_collectors.len()
+    ));
+
     let mut collector_albums = Vec::new();
     let mut collectors_scanned = 0usize;
     let mut collectors_skipped = 0usize;
 
-    for collector in &sampled_collectors {
+    for (index, collector) in sampled_collectors.iter().enumerate() {
+        progress.item_progress("Scanning collectors", index + 1, sampled_collectors.len());
         match library_bandcamp(fetcher, &collector.url, usize::MAX).await {
             Ok(library) => {
                 collectors_scanned += 1;
@@ -168,6 +185,7 @@ async fn dig_bandcamp(fetcher: &mut Fetcher, args: &DigArgs) -> Result<DigOutput
         }
     }
 
+    progress.stage("Ranking candidates...");
     let results = rank_candidates(
         &resolved.seed,
         collector_albums,
@@ -203,7 +221,12 @@ async fn dig_bandcamp(fetcher: &mut Fetcher, args: &DigArgs) -> Result<DigOutput
     })
 }
 
-async fn dig_soundcloud(fetcher: &mut Fetcher, args: &DigArgs) -> Result<DigOutput> {
+async fn dig_soundcloud(
+    fetcher: &mut Fetcher,
+    args: &DigArgs,
+    progress: ProgressReporter,
+) -> Result<DigOutput> {
+    progress.stage("Resolving SoundCloud seed...");
     let normalized = soundcloud::normalize_url(&args.album_url)?;
     let seed_html = fetcher.fetch_text(&normalized).await?;
     let client_id = soundcloud::extract_client_id(&seed_html)?;
@@ -239,16 +262,22 @@ async fn dig_soundcloud(fetcher: &mut Fetcher, args: &DigArgs) -> Result<DigOutp
         return Err(AppError::NoPublicData);
     }
 
+    progress.stage(&format!(
+        "Found {} public likers, scanning nearby likes...",
+        discovered_count
+    ));
+
     let mut source_tracks = Vec::new();
     let mut likers_scanned = 0usize;
     let mut likers_skipped = 0usize;
     let mut likers_attempted = 0usize;
 
-    for liker in &sampled_sources {
+    for (index, liker) in sampled_sources.iter().enumerate() {
         if source_tracks.len() >= args.max_collectors {
             break;
         }
 
+        progress.item_progress("Scanning likers", index + 1, sampled_sources.len());
         likers_attempted += 1;
         let mut next_url = Some(soundcloud::user_likes_url(&client_id, &liker.id, 100)?);
         let mut page_count = 0usize;
@@ -287,6 +316,7 @@ async fn dig_soundcloud(fetcher: &mut Fetcher, args: &DigArgs) -> Result<DigOutp
         return Err(AppError::NoPublicData);
     }
 
+    progress.stage("Ranking candidates...");
     let results = rank_candidates(
         &seed,
         source_tracks,
