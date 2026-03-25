@@ -7,6 +7,7 @@
 //! - [`provider`] dispatches provider-specific commands for Bandcamp and SoundCloud.
 //! - [`fetch`] and [`cache`] handle HTTP requests and local response caching.
 //! - [`parser`], [`soundcloud`], and [`score`] implement provider parsing and ranking.
+//! - [`progress`] emits user-facing status updates for long-running commands.
 //! - [`output`] renders results for human and machine consumers.
 
 pub mod app;
@@ -18,6 +19,7 @@ pub mod fetch;
 pub mod model;
 pub mod output;
 pub mod parser;
+pub mod progress;
 pub mod provider;
 pub mod score;
 pub mod soundcloud;
