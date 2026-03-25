@@ -1,3 +1,5 @@
+//! Application entrypoints that connect CLI arguments to runtime behavior.
+
 use tracing_subscriber::EnvFilter;
 
 use crate::cli::{CacheCommands, Cli, Commands};
@@ -7,6 +9,7 @@ use crate::fetch::Fetcher;
 use crate::output::{print_collectors, print_dig, print_library, print_resolve, OutputFormat};
 use crate::provider;
 
+/// Execute the selected CLI command end to end.
 pub async fn run(cli: Cli) -> Result<()> {
     init_tracing(cli.verbose, cli.quiet);
     let settings = Settings::load(&cli)?;

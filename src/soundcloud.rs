@@ -1,3 +1,10 @@
+//! SoundCloud-specific URL handling, API helpers, and likes parsing.
+//!
+//! Unlike the Bandcamp path, most useful discovery data comes from SoundCloud's
+//! public API responses rather than from HTML alone. This module keeps the
+//! provider-specific pieces contained so the higher-level command flow in
+//! [`crate::provider`] can remain provider-neutral.
+
 use regex::Regex;
 use scraper::{Html, Selector};
 use serde::Deserialize;
@@ -8,6 +15,7 @@ use crate::model::{ItemKind, Platform, SeedAlbum};
 
 const FALLBACK_CLIENT_ID: &str = "WU4bVxk5Df0g5JC8ULzW77Ry7OM10Lyj";
 
+/// Normalize a SoundCloud track or playlist URL.
 pub fn normalize_url(url: &str) -> Result<String> {
     let mut parsed = Url::parse(url)?;
     parsed.set_fragment(None);
@@ -49,6 +57,7 @@ pub fn normalize_url(url: &str) -> Result<String> {
     Ok(parsed.to_string())
 }
 
+/// Resolve a SoundCloud page directly from HTML metadata.
 pub fn resolve_seed(url: &str, html: &str) -> Result<SeedAlbum> {
     let document = Html::parse_document(html);
     let canonical_url = meta_content(&document, r#"meta[property="og:url"]"#)
@@ -87,6 +96,7 @@ pub fn resolve_seed(url: &str, html: &str) -> Result<SeedAlbum> {
     })
 }
 
+/// Public liker plus the nearby liked tracks used as recommendation evidence.
 #[derive(Debug, Clone)]
 pub struct LikeSource {
     pub id: String,
@@ -95,6 +105,7 @@ pub struct LikeSource {
     pub tracks: Vec<crate::model::OwnedAlbum>,
 }
 
+/// One page of a user's likes feed plus an optional extracted evidence window.
 pub struct UserLikesPage {
     pub source: Option<LikeSource>,
     pub next_href: Option<String>,
@@ -144,6 +155,7 @@ struct ApiLike {
     track: Option<ApiTrack>,
 }
 
+/// Extract the public client id used by SoundCloud's web application.
 pub fn extract_client_id(html: &str) -> Result<String> {
     let pattern =
         Regex::new(r#""hydratable":"apiClient","data":\{"id":"([^"]+)""#).expect("valid regex");
@@ -155,6 +167,7 @@ pub fn extract_client_id(html: &str) -> Result<String> {
     Ok(client_id)
 }
 
+/// Build the public likers endpoint for a track.
 pub fn likers_url(client_id: &str, track_id: &str, limit: usize) -> Result<String> {
     let mut url = Url::parse(&format!(
         "https://api-v2.soundcloud.com/tracks/{track_id}/likers"
@@ -165,6 +178,7 @@ pub fn likers_url(client_id: &str, track_id: &str, limit: usize) -> Result<Strin
     Ok(url.to_string())
 }
 
+/// Build the likes-feed endpoint for a user.
 pub fn user_likes_url(client_id: &str, user_id: &str, limit: usize) -> Result<String> {
     let mut url = Url::parse(&format!(
         "https://api-v2.soundcloud.com/users/{user_id}/likes"
@@ -175,6 +189,7 @@ pub fn user_likes_url(client_id: &str, user_id: &str, limit: usize) -> Result<St
     Ok(url.to_string())
 }
 
+/// Build the SoundCloud resolve endpoint for a canonical URL.
 pub fn resolve_api_url(client_id: &str, soundcloud_url: &str) -> Result<String> {
     let mut url = Url::parse("https://api-v2.soundcloud.com/resolve")?;
     url.query_pairs_mut()
@@ -183,6 +198,7 @@ pub fn resolve_api_url(client_id: &str, soundcloud_url: &str) -> Result<String> 
     Ok(url.to_string())
 }
 
+/// Ensure a SoundCloud API URL includes the given client id.
 pub fn with_client_id(url: &str, client_id: &str) -> Result<String> {
     let mut parsed = Url::parse(url)?;
     let has_client_id = parsed.query_pairs().any(|(key, _)| key == "client_id");
@@ -192,6 +208,7 @@ pub fn with_client_id(url: &str, client_id: &str) -> Result<String> {
     Ok(parsed.to_string())
 }
 
+/// Resolve a canonical SoundCloud seed from the public API response body.
 pub fn resolve_api_seed(json: &str) -> Result<SeedAlbum> {
     let track: ApiTrack = serde_json::from_str(json)?;
     let kind = match track.kind.as_str() {
@@ -218,6 +235,7 @@ pub fn resolve_api_seed(json: &str) -> Result<SeedAlbum> {
     })
 }
 
+/// Parse a list of public likers for a track.
 pub fn parse_likers(json: &str) -> Result<Vec<LikeSource>> {
     let response: LikersResponse = serde_json::from_str(json)?;
     Ok(response
@@ -232,6 +250,7 @@ pub fn parse_likers(json: &str) -> Result<Vec<LikeSource>> {
         .collect())
 }
 
+/// Parse one page of a user's likes feed and extract nearby recommendation evidence.
 pub fn parse_user_likes_page(
     json: &str,
     user: &LikeSource,

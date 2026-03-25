@@ -1,3 +1,5 @@
+//! On-disk cache for fetched response bodies.
+
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -7,6 +9,7 @@ use tokio::fs;
 
 use crate::error::Result;
 
+/// Basic cache hit/miss counters collected during a command run.
 #[derive(Debug, Clone, Default)]
 pub struct CacheStats {
     pub hits: usize,
@@ -20,21 +23,25 @@ struct CacheEntry {
     body: String,
 }
 
+/// Filesystem-backed response cache keyed by URL hash.
 #[derive(Debug, Clone)]
 pub struct Cache {
     root: PathBuf,
 }
 
 impl Cache {
+    /// Create the cache directory if it does not already exist.
     pub async fn new(root: PathBuf) -> Result<Self> {
         fs::create_dir_all(&root).await?;
         Ok(Self { root })
     }
 
+    /// Return the cache root directory.
     pub fn root(&self) -> &Path {
         &self.root
     }
 
+    /// Load a cached body if present and fresh enough.
     pub async fn get(&self, url: &str, max_age_ms: u64) -> Result<Option<String>> {
         let path = self.entry_path(url);
         let Ok(raw) = fs::read_to_string(path).await else {
@@ -50,6 +57,7 @@ impl Cache {
         Ok(Some(entry.body))
     }
 
+    /// Store a response body in the cache.
     pub async fn put(&self, url: &str, body: &str) -> Result<()> {
         let entry = CacheEntry {
             url: url.to_string(),
@@ -62,6 +70,7 @@ impl Cache {
         Ok(())
     }
 
+    /// Count cache entries and total bytes on disk.
     pub async fn stats(&self) -> Result<(usize, u64)> {
         let mut entries = 0usize;
         let mut bytes = 0u64;
@@ -78,6 +87,7 @@ impl Cache {
         Ok((entries, bytes))
     }
 
+    /// Remove all cached files.
     pub async fn clear(&self) -> Result<()> {
         let mut read_dir = fs::read_dir(&self.root).await?;
         while let Some(item) = read_dir.next_entry().await? {

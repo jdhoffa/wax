@@ -1,3 +1,5 @@
+//! Bandcamp-specific HTML parsing and URL normalization.
+
 use std::collections::{HashMap, HashSet};
 
 use regex::Regex;
@@ -7,6 +9,7 @@ use url::Url;
 use crate::error::{AppError, Result};
 use crate::model::{Collector, ItemKind, OwnedAlbum, Platform, SeedAlbum};
 
+/// Normalize a Bandcamp URL by removing query and fragment components.
 pub fn normalize_url(url: &str) -> Result<String> {
     let mut parsed = Url::parse(url)?;
     parsed.set_fragment(None);
@@ -20,6 +23,7 @@ pub fn normalize_url(url: &str) -> Result<String> {
     Ok(parsed.to_string())
 }
 
+/// Resolve a Bandcamp seed album from album HTML.
 pub fn resolve_seed(url: &str, html: &str) -> Result<SeedAlbum> {
     let document = Html::parse_document(html);
     let canonical_url = meta_content(&document, r#"meta[property="og:url"]"#)
@@ -51,6 +55,7 @@ pub fn resolve_seed(url: &str, html: &str) -> Result<SeedAlbum> {
     })
 }
 
+/// Parse public collectors linked from a Bandcamp album page.
 pub fn parse_collectors(html: &str) -> Vec<Collector> {
     let document = Html::parse_document(html);
     let selector = Selector::parse("a[href]").expect("valid selector");
@@ -92,6 +97,7 @@ pub fn parse_collectors(html: &str) -> Vec<Collector> {
     collectors
 }
 
+/// Parse owned albums from a public Bandcamp fan page.
 pub fn parse_owned_albums(html: &str) -> Vec<OwnedAlbum> {
     let document = Html::parse_document(html);
     let selector = Selector::parse("a[href]").expect("valid selector");

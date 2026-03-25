@@ -1,3 +1,9 @@
+//! Provider detection and command dispatch.
+//!
+//! This module contains the top-level workflows for each command. It decides
+//! which provider implementation to use, runs the relevant fetch/parse steps,
+//! and returns provider-neutral output structs from [`crate::model`].
+
 use rand::seq::SliceRandom;
 use url::Url;
 
@@ -11,6 +17,7 @@ use crate::parser;
 use crate::score::{rank_candidates, ScoreOptions};
 use crate::soundcloud;
 
+/// Detect the provider for a user-supplied URL.
 pub fn detect_platform(url: &str) -> Result<Platform> {
     let parsed = Url::parse(url)?;
     let Some(host) = parsed.host_str() else {
@@ -33,6 +40,7 @@ pub fn detect_platform(url: &str) -> Result<Platform> {
     )))
 }
 
+/// Resolve a supported URL into canonical seed metadata.
 pub async fn resolve_command(fetcher: &mut Fetcher, item_url: &str) -> Result<ResolveOutput> {
     match detect_platform(item_url)? {
         Platform::Bandcamp => resolve_bandcamp(fetcher, item_url).await,
@@ -40,6 +48,7 @@ pub async fn resolve_command(fetcher: &mut Fetcher, item_url: &str) -> Result<Re
     }
 }
 
+/// List collectors for a Bandcamp album.
 pub async fn collectors_command(fetcher: &mut Fetcher, args: &DigArgs) -> Result<CollectorsOutput> {
     match detect_platform(&args.album_url)? {
         Platform::Bandcamp => collectors_bandcamp(fetcher, args).await,
@@ -50,6 +59,7 @@ pub async fn collectors_command(fetcher: &mut Fetcher, args: &DigArgs) -> Result
     }
 }
 
+/// List a public Bandcamp fan library.
 pub async fn library_command(
     fetcher: &mut Fetcher,
     fan_url: &str,
@@ -64,6 +74,7 @@ pub async fn library_command(
     }
 }
 
+/// Rank recommendations for a supported seed URL.
 pub async fn dig_command(fetcher: &mut Fetcher, args: &DigArgs) -> Result<DigOutput> {
     match detect_platform(&args.album_url)? {
         Platform::Bandcamp => dig_bandcamp(fetcher, args).await,

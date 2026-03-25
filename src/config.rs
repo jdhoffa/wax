@@ -1,3 +1,5 @@
+//! Configuration loading and CLI/file precedence rules.
+
 use std::path::{Path, PathBuf};
 
 use directories::ProjectDirs;
@@ -6,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::cli::Cli;
 use crate::error::{AppError, Result};
 
+/// Deserialized TOML config file.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileConfig {
     pub cache_dir: Option<PathBuf>,
@@ -17,6 +20,7 @@ pub struct FileConfig {
     pub max_depth: Option<usize>,
 }
 
+/// Runtime settings used by the fetch layer.
 #[derive(Debug, Clone)]
 pub struct Settings {
     pub cache_dir: PathBuf,
@@ -27,6 +31,10 @@ pub struct Settings {
 }
 
 impl Settings {
+    /// Load runtime settings from CLI flags and an optional TOML file.
+    ///
+    /// CLI flags take precedence over file configuration. If neither provides a
+    /// value, the built-in defaults are used.
     pub fn load(cli: &Cli) -> Result<Self> {
         let file_cfg = load_file_config(cli.config.as_deref())?;
         let project_dirs = ProjectDirs::from("dev", "jdhoffa", "wax").ok_or_else(|| {

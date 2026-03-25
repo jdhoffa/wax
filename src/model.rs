@@ -1,5 +1,8 @@
+//! Shared data model used across providers, ranking, and output rendering.
+
 use serde::{Deserialize, Serialize};
 
+/// Supported upstream platforms.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Platform {
@@ -16,6 +19,7 @@ impl Platform {
     }
 }
 
+/// High-level type of resolved item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ItemKind {
@@ -24,6 +28,7 @@ pub enum ItemKind {
     Playlist,
 }
 
+/// Canonical metadata for the seed item a command operates on.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SeedAlbum {
     pub platform: Platform,
@@ -37,6 +42,7 @@ pub struct SeedAlbum {
     pub release_id: Option<String>,
 }
 
+/// Public collector or liker that can act as a discovery source.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Collector {
     pub handle: String,
@@ -45,6 +51,7 @@ pub struct Collector {
     pub visible: bool,
 }
 
+/// Normalized record discovered in a collector or likes library.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OwnedAlbum {
     pub platform: Platform,
@@ -56,6 +63,7 @@ pub struct OwnedAlbum {
     pub label: Option<String>,
 }
 
+/// Ranked recommendation produced by `dig`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CandidateRecord {
     pub rank: usize,
@@ -69,6 +77,7 @@ pub struct CandidateRecord {
     pub collectors: Vec<String>,
 }
 
+/// Summary counters collected while crawling a provider workflow.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CrawlSummary {
     pub collectors_discovered: usize,
@@ -80,11 +89,13 @@ pub struct CrawlSummary {
     pub cache_misses: usize,
 }
 
+/// Output payload for `resolve`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResolveOutput {
     pub seed: SeedAlbum,
 }
 
+/// Output payload for `collectors`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CollectorsOutput {
     pub seed: SeedAlbum,
@@ -92,12 +103,14 @@ pub struct CollectorsOutput {
     pub collectors: Vec<Collector>,
 }
 
+/// Output payload for `library`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LibraryOutput {
     pub collector_url: String,
     pub albums: Vec<OwnedAlbum>,
 }
 
+/// Output payload for `dig`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DigOutput {
     pub seed: SeedAlbum,

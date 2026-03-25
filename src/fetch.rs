@@ -1,3 +1,5 @@
+//! HTTP fetching with simple on-disk response caching.
+
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -8,6 +10,7 @@ use crate::cache::{Cache, CacheStats};
 use crate::config::Settings;
 use crate::error::{AppError, Result};
 
+/// Shared fetch helper used by provider workflows.
 #[derive(Debug)]
 pub struct Fetcher {
     client: Client,
@@ -18,6 +21,7 @@ pub struct Fetcher {
 }
 
 impl Fetcher {
+    /// Build a fetcher from runtime settings.
     pub async fn new(settings: &Settings) -> Result<Self> {
         let client = Client::builder()
             .timeout(Duration::from_millis(settings.timeout_ms))
@@ -33,10 +37,15 @@ impl Fetcher {
         })
     }
 
+    /// Access the underlying cache.
     pub fn cache(&self) -> &Cache {
         &self.cache
     }
 
+    /// Fetch text content from a URL or `file://` fixture path.
+    ///
+    /// Network responses are cached on disk for a provider-defined freshness
+    /// window derived from the configured timeout.
     pub async fn fetch_text(&mut self, url: &str) -> Result<String> {
         if let Some(path) = file_path_from_url(url) {
             return Ok(tokio::fs::read_to_string(path).await?);

@@ -1,14 +1,18 @@
+//! Output rendering for CLI commands.
+
 use crate::error::Result;
 use crate::model::{
     CandidateRecord, CollectorsOutput, DigOutput, ItemKind, LibraryOutput, ResolveOutput,
 };
 
+/// Rendering format requested by the user.
 pub enum OutputFormat {
     Table,
     Json,
     Csv,
 }
 
+/// Print `resolve` output in the requested format.
 pub fn print_resolve(output: &ResolveOutput, format: OutputFormat) -> Result<()> {
     match format {
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(output)?),
@@ -33,6 +37,7 @@ pub fn print_resolve(output: &ResolveOutput, format: OutputFormat) -> Result<()>
     Ok(())
 }
 
+/// Print `collectors` output in the requested format.
 pub fn print_collectors(output: &CollectorsOutput, format: OutputFormat) -> Result<()> {
     match format {
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(output)?),
@@ -63,6 +68,7 @@ pub fn print_collectors(output: &CollectorsOutput, format: OutputFormat) -> Resu
     Ok(())
 }
 
+/// Print `library` output in the requested format.
 pub fn print_library(output: &LibraryOutput, format: OutputFormat) -> Result<()> {
     match format {
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(output)?),
@@ -88,6 +94,7 @@ pub fn print_library(output: &LibraryOutput, format: OutputFormat) -> Result<()>
     Ok(())
 }
 
+/// Print `dig` output in the requested format.
 pub fn print_dig(output: &DigOutput, format: OutputFormat) -> Result<()> {
     match format {
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(output)?),

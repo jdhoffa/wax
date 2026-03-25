@@ -1,7 +1,10 @@
+//! Error types and process exit code mapping.
+
 use std::process::ExitCode;
 
 use thiserror::Error;
 
+/// Application error type shared across CLI commands.
 #[derive(Debug, Error)]
 pub enum AppError {
     #[error("invalid input: {0}")]
@@ -31,6 +34,7 @@ pub enum AppError {
 pub type Result<T> = std::result::Result<T, AppError>;
 
 impl AppError {
+    /// Convert an application error into the process exit code used by `main`.
     pub fn exit_code(&self) -> i32 {
         match self {
             Self::NoPublicData => 2,
