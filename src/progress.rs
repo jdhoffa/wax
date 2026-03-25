@@ -25,7 +25,7 @@ impl ProgressReporter {
             return;
         }
 
-        if current == 1 || current == total || current % 10 == 0 {
+        if current == 1 || current == total || current.is_multiple_of(10) {
             eprintln!("{label}: {current}/{total}...");
         }
     }
