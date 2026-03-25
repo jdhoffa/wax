@@ -1,17 +1,17 @@
 # wax
 
-`wax` is a Rust CLI for digging through public Bandcamp collector overlap.
+`wax` is a Rust CLI for digging through public music discovery signals from Bandcamp and SoundCloud.
 
-Given a Bandcamp album URL, `wax` resolves the seed album, finds public collectors who own it, inspects their public libraries, and ranks related albums worth exploring.
+Give it a URL and it will detect the platform automatically:
 
-## What It Does
+- Bandcamp album URLs use collector overlap
+- SoundCloud track URLs use public likers and nearby likes in each liker feed
 
-- Resolves a Bandcamp album URL into normalized seed metadata
-- Finds public collectors for the seed album
-- Crawls public libraries for a bounded set of collectors
-- Ranks related albums by collector overlap
-- Prints human-readable tables or machine-readable JSON and CSV
-- Caches fetched pages locally to make repeated runs faster
+`wax` keeps the same entrypoint across providers:
+
+```bash
+wax dig <url>
+```
 
 ## Install
 
@@ -39,10 +39,17 @@ The binary will be at `target/release/wax`.
 
 ## Quick Start
 
-Run the main recommendation flow with a Bandcamp album URL:
+Bandcamp:
 
 ```bash
 wax dig https://artist.bandcamp.com/album/example-record
+```
+
+SoundCloud:
+
+```bash
+wax resolve https://soundcloud.com/chvrches/the-mother-we-share
+wax dig https://soundcloud.com/chvrches/the-mother-we-share
 ```
 
 Inspect the available commands:
@@ -54,45 +61,59 @@ wax dig --help
 
 ## Commands
 
-### `wax dig <album-url>`
+### `wax dig <url>`
 
-Runs the full discovery flow and prints ranked recommendations.
+Runs the recommendation flow for a supported URL.
+
+Examples:
 
 ```bash
 wax dig https://artist.bandcamp.com/album/example-record
 wax dig https://artist.bandcamp.com/album/example-record --max-collectors 50 --limit 20
-wax dig https://artist.bandcamp.com/album/example-record --exclude-artist --sort overlap
+wax dig https://soundcloud.com/chvrches/the-mother-we-share --max-collectors 25 --limit 10
+wax dig https://soundcloud.com/chvrches/the-mother-we-share --exclude-artist --sort overlap
 wax dig https://artist.bandcamp.com/album/example-record --json
 ```
 
 Useful flags:
 
-- `--max-collectors <n>`: maximum collectors to sample from the seed album
+- `--max-collectors <n>`: maximum source nodes to sample during discovery
 - `--max-depth <n>`: reserved crawl-depth flag, currently defaults to `1`
 - `--limit <n>`: maximum recommendations to print
-- `--sample top|random`: keep the first collectors found or shuffle before truncating
+- `--sample top|random`: keep sources in discovery order or shuffle before truncating
 - `--min-overlap <n>`: minimum overlap count required for a recommendation
 - `--exclude-artist`: drop records by the same artist as the seed
 - `--exclude-label`: drop records on the same label as the seed
 - `--tag <tag>`: require matching tags on candidate records
 - `--sort score|overlap`: sort recommendations by score or raw overlap
 
-### `wax resolve <album-url>`
+Provider notes:
 
-Resolves an album URL and prints seed metadata.
+- Bandcamp `dig` uses public collectors and their public libraries
+- SoundCloud `dig` currently supports track URLs
+- SoundCloud playlist URLs are not supported for `dig` yet
+
+### `wax resolve <url>`
+
+Resolves a supported URL and prints canonical seed metadata.
+
+Examples:
 
 ```bash
 wax resolve https://artist.bandcamp.com/album/example-record
+wax resolve https://soundcloud.com/chvrches/the-mother-we-share
 ```
 
 ### `wax collectors <album-url>`
 
-Lists public collectors discovered for a seed album.
+Lists public collectors discovered for a Bandcamp seed album.
 
 ```bash
 wax collectors https://artist.bandcamp.com/album/example-record
 wax collectors https://artist.bandcamp.com/album/example-record --max-collectors 100
 ```
+
+This command is Bandcamp-only.
 
 ### `wax library <fan-url>`
 
@@ -102,6 +123,8 @@ Prints albums from a public Bandcamp fan page.
 wax library https://bandcamp.com/fanname
 wax library https://bandcamp.com/fanname --limit 50
 ```
+
+This command is Bandcamp-only.
 
 ### `wax cache stats`
 
@@ -142,6 +165,7 @@ Use `--json` for structured output:
 
 ```bash
 wax dig https://artist.bandcamp.com/album/example-record --json
+wax resolve https://soundcloud.com/chvrches/the-mother-we-share --json
 ```
 
 Use `--csv` for CSV output:
@@ -152,47 +176,13 @@ wax collectors https://artist.bandcamp.com/album/example-record --csv
 wax library https://bandcamp.com/fanname --csv
 ```
 
-## Configuration
-
-Pass a TOML file with `--config`:
-
-```bash
-wax dig https://artist.bandcamp.com/album/example-record --config ./wax.toml
-```
-
-Example config:
-
-```toml
-cache_dir = "/tmp/wax-cache"
-request_delay_ms = 1000
-concurrency = 4
-timeout_ms = 10000
-user_agent = "wax/0.1"
-max_collectors = 75
-max_depth = 1
-```
-
-Note: the current CLI reads the config file for shared request settings. Command-specific defaults such as `max_collectors` and `max_depth` are present in the config schema but are not yet wired into command execution.
-
 ## Notes
 
-- `wax` only uses publicly visible Bandcamp pages
-- private or unavailable fan libraries are skipped
-- if no usable public data is available, the command exits with a non-zero status
+- `wax` only uses publicly visible Bandcamp and SoundCloud data
+- SoundCloud support currently focuses on track resolution and a prototype `dig` flow
+- private or unavailable public data is skipped when possible
 - repeated runs are faster when the cache is warm
 
-## Development
+## Hacking
 
-Run the test suite:
-
-```bash
-cargo test
-```
-
-Run the CLI without installing:
-
-```bash
-cargo run -- dig https://artist.bandcamp.com/album/example-record
-```
-
-The current implementation is in [Cargo.toml](Cargo.toml), [src/cli.rs](src/cli.rs), and [src/app.rs](src/app.rs). The broader product notes live in [SPEC.md](SPEC.md).
+Developer-facing notes live in [HACKING.md](HACKING.md).
