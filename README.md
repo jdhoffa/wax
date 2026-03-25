@@ -1,5 +1,8 @@
 # wax
 
+[![CI](https://github.com/jdhoffa/wax/actions/workflows/ci.yml/badge.svg)](https://github.com/jdhoffa/wax/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 `wax` is a Rust CLI for digging through public music discovery signals from Bandcamp and SoundCloud.
 
 Give it a URL and it will detect the platform automatically:
