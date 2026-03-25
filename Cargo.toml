@@ -1,6 +1,6 @@
 [package]
 name = "wax"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "CLI for digging through public music discovery signals from Bandcamp and SoundCloud"
 license = "MIT"
