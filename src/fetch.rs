@@ -17,6 +17,7 @@ pub struct Fetcher {
     cache: Cache,
     request_delay_ms: u64,
     timeout_ms: u64,
+    youtube_api_key: Option<String>,
     pub stats: CacheStats,
 }
 
@@ -33,6 +34,7 @@ impl Fetcher {
             cache: Cache::new(settings.cache_dir.clone()).await?,
             request_delay_ms: settings.request_delay_ms,
             timeout_ms: settings.timeout_ms,
+            youtube_api_key: settings.youtube_api_key.clone(),
             stats: CacheStats::default(),
         })
     }
@@ -40,6 +42,11 @@ impl Fetcher {
     /// Access the underlying cache.
     pub fn cache(&self) -> &Cache {
         &self.cache
+    }
+
+    /// Return the configured YouTube API key, if available.
+    pub fn youtube_api_key(&self) -> Option<&str> {
+        self.youtube_api_key.as_deref()
     }
 
     /// Fetch text content from a URL or `file://` fixture path.

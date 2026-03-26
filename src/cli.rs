@@ -7,8 +7,8 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 #[command(
     name = "wax",
     version,
-    about = "Dig through public music discovery signals from Bandcamp and SoundCloud",
-    long_about = "Dig through public music discovery signals from Bandcamp and SoundCloud.\n\nUse `resolve` to inspect a supported URL, `dig` to rank nearby recommendations, `collectors` and `library` for Bandcamp-only exploration, and `cache` to inspect or clear local fetch state."
+    about = "Dig through public music discovery signals from Bandcamp, SoundCloud, and YouTube",
+    long_about = "Dig through public music discovery signals from Bandcamp, SoundCloud, and YouTube.\n\nUse `resolve` to inspect a supported URL, `dig` to rank nearby recommendations, `collectors` and `library` for Bandcamp-only exploration, and `cache` to inspect or clear local fetch state."
 )]
 pub struct Cli {
     /// Load shared request settings from a TOML config file.
@@ -32,6 +32,9 @@ pub struct Cli {
     /// Override the HTTP user agent used for requests.
     #[arg(long, global = true)]
     pub user_agent: Option<String>,
+    /// YouTube Data API key. Can also be provided via `YOUTUBE_API_KEY`.
+    #[arg(long, global = true)]
+    pub youtube_api_key: Option<String>,
     /// Delay between outbound requests in milliseconds.
     #[arg(long, global = true)]
     pub rate_limit_ms: Option<u64>,
@@ -49,7 +52,7 @@ pub struct Cli {
 pub enum Commands {
     /// Resolve a supported URL into canonical seed metadata.
     Resolve {
-        /// Bandcamp album or SoundCloud track/playlist URL.
+        /// Bandcamp, SoundCloud, or YouTube URL.
         album_url: String,
     },
     /// List public Bandcamp collectors discovered for a seed album.
@@ -62,7 +65,7 @@ pub enum Commands {
         #[arg(long, default_value_t = 50)]
         limit: usize,
     },
-    /// Rank recommendations for a Bandcamp album or SoundCloud track URL.
+    /// Rank recommendations for a Bandcamp album, SoundCloud track, or YouTube video URL.
     Dig(DigArgs),
     /// Inspect or clear the local fetch cache.
     Cache {
@@ -82,7 +85,7 @@ pub enum CacheCommands {
 /// Shared arguments for discovery-style commands.
 #[derive(Debug, Clone, Args)]
 pub struct DigArgs {
-    /// Seed URL. Bandcamp commands expect an album URL; SoundCloud dig accepts tracks.
+    /// Seed URL. Bandcamp expects albums; SoundCloud expects tracks; YouTube expects videos.
     pub album_url: String,
     /// Maximum number of source collectors or likers to sample.
     #[arg(long, default_value_t = 75)]

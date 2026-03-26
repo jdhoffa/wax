@@ -135,7 +135,7 @@ fn print_results_csv(results: &[CandidateRecord]) -> Result<()> {
 fn print_results_table(output: &DigOutput) {
     println!("Seed: {} - {}", output.seed.artist, output.seed.title);
     println!(
-        "Collectors: discovered={} sampled={} scanned={} skipped={}",
+        "Sources: discovered={} sampled={} scanned={} skipped={}",
         output.summary.collectors_discovered,
         output.summary.collectors_sampled,
         output.summary.collectors_scanned,

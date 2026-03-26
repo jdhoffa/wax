@@ -4,6 +4,8 @@
 //! which provider implementation to use, runs the relevant fetch/parse steps,
 //! and returns provider-neutral output structs from [`crate::model`].
 
+use std::collections::HashMap;
+
 use rand::seq::SliceRandom;
 use url::Url;
 
@@ -17,6 +19,7 @@ use crate::parser;
 use crate::progress::ProgressReporter;
 use crate::score::{rank_candidates, ScoreOptions};
 use crate::soundcloud;
+use crate::youtube;
 
 /// Detect the provider for a user-supplied URL.
 pub fn detect_platform(url: &str) -> Result<Platform> {
@@ -35,6 +38,13 @@ pub fn detect_platform(url: &str) -> Result<Platform> {
     {
         return Ok(Platform::Soundcloud);
     }
+    if host == "youtube.com"
+        || host.ends_with(".youtube.com")
+        || host == "youtu.be"
+        || host.ends_with(".youtu.be")
+    {
+        return Ok(Platform::Youtube);
+    }
 
     Err(AppError::InvalidInput(format!(
         "unsupported platform for URL: {url}"
@@ -46,6 +56,7 @@ pub async fn resolve_command(fetcher: &mut Fetcher, item_url: &str) -> Result<Re
     match detect_platform(item_url)? {
         Platform::Bandcamp => resolve_bandcamp(fetcher, item_url).await,
         Platform::Soundcloud => resolve_soundcloud(fetcher, item_url).await,
+        Platform::Youtube => resolve_youtube(fetcher, item_url).await,
     }
 }
 
@@ -55,6 +66,10 @@ pub async fn collectors_command(fetcher: &mut Fetcher, args: &DigArgs) -> Result
         Platform::Bandcamp => collectors_bandcamp(fetcher, args).await,
         Platform::Soundcloud => Err(AppError::UnsupportedPlatformFeature {
             platform: Platform::Soundcloud.as_str().to_string(),
+            feature: "collectors".to_string(),
+        }),
+        Platform::Youtube => Err(AppError::UnsupportedPlatformFeature {
+            platform: Platform::Youtube.as_str().to_string(),
             feature: "collectors".to_string(),
         }),
     }
@@ -72,6 +87,10 @@ pub async fn library_command(
             platform: Platform::Soundcloud.as_str().to_string(),
             feature: "library".to_string(),
         }),
+        Platform::Youtube => Err(AppError::UnsupportedPlatformFeature {
+            platform: Platform::Youtube.as_str().to_string(),
+            feature: "library".to_string(),
+        }),
     }
 }
 
@@ -84,6 +103,7 @@ pub async fn dig_command(
     match detect_platform(&args.album_url)? {
         Platform::Bandcamp => dig_bandcamp(fetcher, args, progress).await,
         Platform::Soundcloud => dig_soundcloud(fetcher, args, progress).await,
+        Platform::Youtube => dig_youtube(fetcher, args, progress).await,
     }
 }
 
@@ -101,6 +121,17 @@ async fn resolve_soundcloud(fetcher: &mut Fetcher, track_url: &str) -> Result<Re
     let resolve_url = soundcloud::resolve_api_url(&client_id, &normalized)?;
     let json = fetcher.fetch_text(&resolve_url).await?;
     let seed = soundcloud::resolve_api_seed(&json)?;
+    Ok(ResolveOutput { seed })
+}
+
+async fn resolve_youtube(fetcher: &mut Fetcher, video_url: &str) -> Result<ResolveOutput> {
+    let api_key = youtube_api_key(fetcher)?;
+    let normalized = youtube::normalize_url(video_url)?;
+    let video_id = youtube::extract_video_id(&normalized)?;
+    let json = fetcher
+        .fetch_text(&youtube::videos_url(&api_key, &[video_id])?)
+        .await?;
+    let seed = youtube::parse_seed(&json)?;
     Ok(ResolveOutput { seed })
 }
 
@@ -352,6 +383,117 @@ async fn dig_soundcloud(
     })
 }
 
+async fn dig_youtube(
+    fetcher: &mut Fetcher,
+    args: &DigArgs,
+    progress: ProgressReporter,
+) -> Result<DigOutput> {
+    progress.stage("Resolving YouTube seed...");
+    let api_key = youtube_api_key(fetcher)?;
+    let normalized = youtube::normalize_url(&args.album_url).map_err(|_| {
+        AppError::InvalidInput(
+            "YouTube dig expects a watch URL with playlist context, for example `https://www.youtube.com/watch?v=VIDEO_ID&list=PLAYLIST_ID`.".to_string(),
+        )
+    })?;
+    let video_id = youtube::extract_video_id(&normalized)?;
+    let playlist_id = youtube::extract_playlist_id(&args.album_url)?;
+    let seed_json = fetcher
+        .fetch_text(&youtube::videos_url(
+            &api_key,
+            std::slice::from_ref(&video_id),
+        )?)
+        .await?;
+    let seed = youtube::parse_seed(&seed_json)?;
+
+    progress.stage("Loading playlist context...");
+    let playlist_titles =
+        fetch_playlist_titles(fetcher, &api_key, std::slice::from_ref(&playlist_id)).await?;
+    let mut entries = Vec::new();
+    let mut next_page_token = None;
+    let mut page_count = 0usize;
+
+    loop {
+        page_count += 1;
+        let url =
+            youtube::playlist_items_url(&api_key, &playlist_id, next_page_token.as_deref(), 50)?;
+        let json = fetcher.fetch_text(&url).await?;
+        entries.extend(youtube::parse_playlist_page(&json)?);
+        let covered_seed = entries.iter().any(|entry| entry.video_id == video_id);
+        next_page_token = youtube::parse_next_page_token(&json)?;
+        if next_page_token.is_none() || covered_seed || page_count >= 6 {
+            break;
+        }
+    }
+
+    if !entries.iter().any(|entry| entry.video_id == video_id) {
+        return Err(AppError::InvalidInput(
+            "The provided YouTube URL includes a playlist, but the scanned playlist pages did not include the seed video. Pass a watch URL where the `v=` video actually belongs to the `list=` playlist.".to_string(),
+        ));
+    }
+
+    let title = playlist_titles.get(&playlist_id).map(String::as_str);
+    let source = youtube::build_playlist_source(entries, &playlist_id, title, &video_id)?
+        .ok_or(AppError::NoPublicData)?;
+
+    progress.stage("Ranking candidates...");
+    let effective_min_overlap = args.min_overlap.min(1);
+    let results = rank_candidates(
+        &seed,
+        vec![(source.title, source.tracks)],
+        &ScoreOptions {
+            min_overlap: effective_min_overlap,
+            exclude_artist: args.exclude_artist,
+            exclude_label: args.exclude_label,
+            required_tags: args.tag.clone(),
+            source_label_plural: "playlists",
+            sort: args.sort,
+            limit: args.limit,
+        },
+    );
+
+    if results.is_empty() {
+        return Err(AppError::NoPublicData);
+    }
+
+    let summary = CrawlSummary {
+        collectors_discovered: 1,
+        collectors_sampled: 1,
+        collectors_scanned: 1,
+        collectors_skipped: 0,
+        candidates_ranked: results.len(),
+        cache_hits: fetcher.stats.hits,
+        cache_misses: fetcher.stats.misses,
+    };
+
+    Ok(DigOutput {
+        seed,
+        summary,
+        results,
+    })
+}
+
+async fn fetch_playlist_titles(
+    fetcher: &mut Fetcher,
+    api_key: &str,
+    playlist_ids: &[String],
+) -> Result<HashMap<String, String>> {
+    let mut titles = HashMap::new();
+    for chunk in playlist_ids.chunks(50) {
+        let url = youtube::playlists_url(api_key, chunk)?;
+        let json = fetcher.fetch_text(&url).await?;
+        titles.extend(youtube::parse_playlist_titles(&json)?);
+    }
+    Ok(titles)
+}
+
+fn youtube_api_key(fetcher: &Fetcher) -> Result<String> {
+    fetcher.youtube_api_key().map(str::to_string).ok_or_else(|| {
+        AppError::InvalidInput(
+            "YouTube support requires a YouTube Data API key; pass --youtube-api-key, set YOUTUBE_API_KEY, or add youtube_api_key to config".to_string(),
+        )
+    })
+}
+
 fn sample_collectors(
     mut collectors: Vec<crate::model::Collector>,
     max_collectors: usize,
@@ -383,6 +525,14 @@ mod tests {
         assert_eq!(
             detect_platform("https://soundcloud.com/test-user/test-track").unwrap(),
             Platform::Soundcloud
+        );
+    }
+
+    #[test]
+    fn detects_youtube_platform() {
+        assert_eq!(
+            detect_platform("https://music.youtube.com/watch?v=abc123").unwrap(),
+            Platform::Youtube
         );
     }
 }

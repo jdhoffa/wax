@@ -16,6 +16,7 @@ pub struct FileConfig {
     pub concurrency: Option<usize>,
     pub timeout_ms: Option<u64>,
     pub user_agent: Option<String>,
+    pub youtube_api_key: Option<String>,
     pub max_collectors: Option<usize>,
     pub max_depth: Option<usize>,
 }
@@ -28,6 +29,7 @@ pub struct Settings {
     pub concurrency: usize,
     pub timeout_ms: u64,
     pub user_agent: String,
+    pub youtube_api_key: Option<String>,
 }
 
 impl Settings {
@@ -60,6 +62,11 @@ impl Settings {
                 .clone()
                 .or(file_cfg.user_agent)
                 .unwrap_or_else(|| "wax/0.1".to_string()),
+            youtube_api_key: cli
+                .youtube_api_key
+                .clone()
+                .or(file_cfg.youtube_api_key)
+                .or_else(|| std::env::var("YOUTUBE_API_KEY").ok()),
         })
     }
 }
@@ -72,6 +79,7 @@ fn load_file_config(path: Option<&Path>) -> Result<FileConfig> {
             concurrency: None,
             timeout_ms: None,
             user_agent: None,
+            youtube_api_key: None,
             max_collectors: None,
             max_depth: None,
         });
