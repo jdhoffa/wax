@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub enum Platform {
     Bandcamp,
     Soundcloud,
+    Youtube,
 }
 
 impl Platform {
@@ -15,6 +16,7 @@ impl Platform {
         match self {
             Self::Bandcamp => "bandcamp",
             Self::Soundcloud => "soundcloud",
+            Self::Youtube => "youtube",
         }
     }
 }

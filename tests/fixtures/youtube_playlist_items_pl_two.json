@@ -1,0 +1,46 @@
+{
+  "items": [
+    {
+      "snippet": {
+        "playlistId": "PL_TWO",
+        "position": 0,
+        "title": "Related One",
+        "channelTitle": "Artist A",
+        "resourceId": {
+          "videoId": "rel1"
+        }
+      },
+      "contentDetails": {
+        "videoId": "rel1"
+      }
+    },
+    {
+      "snippet": {
+        "playlistId": "PL_TWO",
+        "position": 1,
+        "title": "Seed Song",
+        "channelTitle": "Seed Artist",
+        "resourceId": {
+          "videoId": "seed123"
+        }
+      },
+      "contentDetails": {
+        "videoId": "seed123"
+      }
+    },
+    {
+      "snippet": {
+        "playlistId": "PL_TWO",
+        "position": 2,
+        "title": "Related Four",
+        "channelTitle": "Artist D",
+        "resourceId": {
+          "videoId": "rel4"
+        }
+      },
+      "contentDetails": {
+        "videoId": "rel4"
+      }
+    }
+  ]
+}

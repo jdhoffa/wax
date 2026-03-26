@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "id": "seed123",
+      "snippet": {
+        "title": "Seed Song",
+        "channelTitle": "Seed Artist",
+        "channelId": "channel123",
+        "tags": ["indie", "dream-pop"]
+      }
+    }
+  ]
+}

@@ -4,9 +4,9 @@
 //!
 //! - [`cli`] defines the command-line surface.
 //! - [`app`] wires parsed CLI arguments into runtime settings and output modes.
-//! - [`provider`] dispatches provider-specific commands for Bandcamp and SoundCloud.
+//! - [`provider`] dispatches provider-specific commands for Bandcamp, SoundCloud, and YouTube.
 //! - [`fetch`] and [`cache`] handle HTTP requests and local response caching.
-//! - [`parser`], [`soundcloud`], and [`score`] implement provider parsing and ranking.
+//! - [`parser`], [`soundcloud`], [`youtube`], and [`score`] implement provider parsing and ranking.
 //! - [`progress`] emits user-facing status updates for long-running commands.
 //! - [`output`] renders results for human and machine consumers.
 
@@ -23,3 +23,4 @@ pub mod progress;
 pub mod provider;
 pub mod score;
 pub mod soundcloud;
+pub mod youtube;

@@ -21,6 +21,7 @@ pub struct ScoreOptions {
 struct Aggregate {
     album: Option<OwnedAlbum>,
     collectors: Vec<String>,
+    best_distance: Option<usize>,
 }
 
 /// Aggregate collector evidence into ranked recommendation rows.
@@ -60,7 +61,15 @@ pub fn rank_candidates(
 
             let entry = aggregates.entry(album.url.clone()).or_default();
             if entry.album.is_none() {
+                entry.best_distance = extract_distance(&album.tags);
                 entry.album = Some(album);
+            } else if let Some(distance) = extract_distance(&album.tags) {
+                entry.best_distance = Some(
+                    entry
+                        .best_distance
+                        .map(|current| current.min(distance))
+                        .unwrap_or(distance),
+                );
             }
             entry.collectors.push(collector.clone());
         }
@@ -83,7 +92,22 @@ pub fn rank_candidates(
         } else {
             0.0
         };
-        let score = (overlap_count as f64 * 1.5) + (overlap_ratio * 10.0) - same_artist_penalty;
+        let distance_bonus = aggregate
+            .best_distance
+            .map(|distance| 3.0 / distance.max(1) as f64)
+            .unwrap_or(0.0);
+        let score = (overlap_count as f64 * 1.5) + (overlap_ratio * 10.0) + distance_bonus
+            - same_artist_penalty;
+        let reason = match aggregate.best_distance {
+            Some(distance) => format!(
+                "Seen in {overlap_count} of {scanned} sampled {} (closest distance {distance})",
+                options.source_label_plural
+            ),
+            None => format!(
+                "Seen in {overlap_count} of {scanned} sampled {}",
+                options.source_label_plural
+            ),
+        };
 
         ranked.push(CandidateRecord {
             rank: 0,
@@ -93,10 +117,7 @@ pub fn rank_candidates(
             overlap_count,
             overlap_ratio,
             score,
-            reason: format!(
-                "Seen in {overlap_count} of {scanned} sampled {}",
-                options.source_label_plural
-            ),
+            reason,
             collectors: aggregate.collectors,
         });
     }
@@ -112,6 +133,12 @@ pub fn rank_candidates(
 
     ranked.truncate(options.limit);
     ranked
+}
+
+fn extract_distance(tags: &[String]) -> Option<usize> {
+    tags.iter()
+        .find_map(|tag| tag.strip_prefix("distance:"))
+        .and_then(|value| value.parse::<usize>().ok())
 }
 
 #[cfg(test)]

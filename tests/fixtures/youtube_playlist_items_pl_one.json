@@ -1,0 +1,60 @@
+{
+  "items": [
+    {
+      "snippet": {
+        "playlistId": "PL_ONE",
+        "position": 0,
+        "title": "Related One",
+        "channelTitle": "Artist A",
+        "resourceId": {
+          "videoId": "rel1"
+        }
+      },
+      "contentDetails": {
+        "videoId": "rel1"
+      }
+    },
+    {
+      "snippet": {
+        "playlistId": "PL_ONE",
+        "position": 1,
+        "title": "Seed Song",
+        "channelTitle": "Seed Artist",
+        "resourceId": {
+          "videoId": "seed123"
+        }
+      },
+      "contentDetails": {
+        "videoId": "seed123"
+      }
+    },
+    {
+      "snippet": {
+        "playlistId": "PL_ONE",
+        "position": 2,
+        "title": "Related Two",
+        "channelTitle": "Artist B",
+        "resourceId": {
+          "videoId": "rel2"
+        }
+      },
+      "contentDetails": {
+        "videoId": "rel2"
+      }
+    },
+    {
+      "snippet": {
+        "playlistId": "PL_ONE",
+        "position": 3,
+        "title": "Deep Cut",
+        "channelTitle": "Artist C",
+        "resourceId": {
+          "videoId": "rel3"
+        }
+      },
+      "contentDetails": {
+        "videoId": "rel3"
+      }
+    }
+  ]
+}
